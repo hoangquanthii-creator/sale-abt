@@ -1,0 +1,5 @@
+{
+  "name": "PlanAI - Quản lý công việc thông minh",
+  "description": "Ứng dụng quản lý dự án và theo dõi công việc thông minh được hỗ trợ bởi Gemini. Tính năng bảng Kanban, chia nhỏ công việc bằng AI, phân tích rủi ro dự án và trợ lý AI chuyên dụng.",
+  "requestFramePermissions": []
+}

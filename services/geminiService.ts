@@ -51,6 +51,34 @@ export const suggestSubtasks = async (taskTitle: string, taskDescription: string
 };
 
 /**
+ * Uses Flash Lite to generate a professional description for a task based on its title.
+ */
+export const suggestDescription = async (taskTitle: string): Promise<string> => {
+  const ai = getAIClient();
+  if (!ai) return "";
+
+  const prompt = `
+    Bạn là một trợ lý quản lý dự án chuyên nghiệp.
+    Hãy viết một đoạn mô tả ngắn gọn (khoảng 2-3 câu) nhưng đầy đủ ý nghĩa cho công việc có tiêu đề: "${taskTitle}".
+    Nội dung cần chuyên nghiệp, tập trung vào mục đích và kết quả mong đợi.
+    Ngôn ngữ: Tiếng Việt.
+    Không trả về gì ngoài nội dung mô tả.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL_FAST,
+      contents: prompt,
+    });
+
+    return response.text?.trim() || "";
+  } catch (error) {
+    console.error("Error generating description:", error);
+    return "";
+  }
+};
+
+/**
  * Uses Gemini 3 Pro with Thinking for deep strategic analysis of the project.
  */
 export const analyzeProjectStrategy = async (tasks: Task[]): Promise<string> => {
@@ -62,6 +90,8 @@ export const analyzeProjectStrategy = async (tasks: Task[]): Promise<string> => 
     status: t.status,
     priority: t.priority,
     assignee: t.assignee || "Chưa giao",
+    meetingWith: t.meetingWith || "Không có",
+    outcome: t.outcome || "Chưa có",
     startDate: t.startDate ? new Date(t.startDate).toDateString() : "Chưa đặt",
     dueDate: t.dueDate ? new Date(t.dueDate).toDateString() : "Chưa đặt",
     description: t.description
@@ -72,9 +102,9 @@ export const analyzeProjectStrategy = async (tasks: Task[]): Promise<string> => 
     ${tasksJson}
 
     Hãy thực hiện một "Đánh giá Chiến lược Chuyên sâu" cho khối lượng công việc này bằng TIẾNG VIỆT.
-    1. **Phân bổ nguồn lực:** Phân tích cách phân chia công việc giữa các thành viên (assignee). Có ai đang bị quá tải hoặc rảnh rỗi không?
-    2. **Rủi ro tiến độ:** Xác định các công việc quá hạn hoặc có deadline gấp dựa trên ngày bắt đầu/hạn chót.
-    3. **Điểm nghẽn (Bottlenecks):** Nhận diện điểm nghẽn dựa trên trạng thái (ví dụ: quá nhiều việc ở cột Review) và độ ưu tiên.
+    1. **Phân bổ nguồn lực & Đối tác:** Phân tích cách phân chia công việc giữa các thành viên. Lưu ý đến các cuộc họp quan trọng (trường meetingWith). Có ai phải đi gặp khách hàng quá nhiều không?
+    2. **Hiệu quả thực hiện (Kết quả):** Dựa trên trường 'outcome' của các việc đã xong, đánh giá sơ bộ chất lượng công việc.
+    3. **Rủi ro tiến độ:** Xác định các công việc quá hạn hoặc có deadline gấp.
     4. **Đề xuất:** Đưa ra thứ tự thực hiện tối ưu và đề xuất điều chuyển nhân sự nếu cần.
     
     Hãy suy nghĩ sâu sắc về sự phụ thuộc và nguyên tắc quản lý nguồn lực.

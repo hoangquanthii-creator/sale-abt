@@ -29,6 +29,8 @@ export interface Task {
   startDate?: number; // When the task starts
   dueDate?: number;   // When the task ends
   assignee?: string;  // Who is doing the task
+  meetingWith?: string; // Who to meet (Customer/Partner)
+  outcome?: string;   // Result of the task
   tags: string[];
   lastNotificationSent?: number; // Timestamp of the last notification
   notificationStatus?: 'NONE' | 'UPCOMING' | 'OVERDUE'; // Status of notification

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Task, Priority } from '../types';
 import { PRIORITY_COLORS, TEAM_MEMBERS, PRIORITY_LABELS, TAG_COLORS } from '../constants';
-import { CheckSquare, AlignLeft, Calendar, MessageCircle, BellRing } from 'lucide-react';
+import { CheckSquare, AlignLeft, Calendar, MessageCircle, BellRing, Handshake, Award } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
@@ -39,11 +39,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onDragStart
       `----------------`,
       `📅 Hạn chót: ${task.dueDate ? new Date(task.dueDate).toLocaleDateString('vi-VN') : 'Không có'}`,
       `👤 Người làm: ${task.assignee || 'Chưa giao'}`,
+      task.meetingWith ? `🤝 Gặp: ${task.meetingWith}` : '',
       `⚠️ Mức độ: ${PRIORITY_LABELS[task.priority]}`,
       `📝 Trạng thái: ${task.status}`,
       `🏷️ Tags: ${task.tags && task.tags.length ? task.tags.join(', ') : 'Không có'}`,
       `----------------`,
-      `${task.description ? `Nội dung: ${task.description}` : ''}`
+      `${task.description ? `Nội dung: ${task.description}` : ''}`,
+      task.outcome ? `🏆 Kết quả: ${task.outcome}` : ''
     ];
     
     const message = lines.filter(l => l).join('\n');
@@ -105,8 +107,27 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onDragStart
 
       <h3 className="font-semibold text-slate-800 mb-1 leading-tight">{task.title}</h3>
       
+      {/* Meeting With Info */}
+      {task.meetingWith && (
+        <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 mb-1.5 bg-slate-50 px-2 py-1 rounded inline-flex">
+            <Handshake size={12} className="text-blue-500"/>
+            <span>Gặp: {task.meetingWith}</span>
+        </div>
+      )}
+
       {task.description && (
         <p className="text-xs text-slate-500 line-clamp-2 mb-2">{task.description}</p>
+      )}
+
+      {/* Outcome Highlight */}
+      {task.outcome && (
+        <div className="mb-2 p-2 bg-amber-50 rounded border border-amber-100 text-xs text-amber-900">
+            <div className="flex items-center gap-1 font-semibold mb-0.5">
+                <Award size={12} className="text-amber-600"/>
+                <span>Kết quả:</span>
+            </div>
+            <p className="line-clamp-2">{task.outcome}</p>
+        </div>
       )}
 
       {/* Tags Display */}

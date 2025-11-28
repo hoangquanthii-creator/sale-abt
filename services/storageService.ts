@@ -12,7 +12,7 @@ const KEYS = {
   WORKFLOW: 'planai-workflow',
 };
 
-// Singleton Storage Service
+// Mock Database Layer (Simulating Server-Side DB)
 export const storageService = {
   // Tasks
   getTasks: (): Task[] => {

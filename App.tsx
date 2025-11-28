@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Plus, BrainCircuit, Target, Settings, Sparkles, MonitorPlay, Users, CloudCheck } from 'lucide-react';
-import { Task, TaskStatus, ViewMode, Priority, ProjectGoal, ZaloSettings, KeyResult, TeamMember } from './types';
+import { LayoutDashboard, Kanban, Plus, BrainCircuit, Target, Settings, Sparkles, MonitorPlay, Users, CloudCheck, Loader2 } from 'lucide-react';
+import { Task, TaskStatus, ViewMode, ProjectGoal, ZaloSettings, KeyResult, TeamMember } from './types';
 import KanbanBoard from './components/KanbanBoard';
 import TaskModal from './components/TaskModal';
 import AIChat from './components/AIChat';
@@ -12,20 +12,17 @@ import GoalModal from './components/GoalModal';
 import SettingsModal from './components/SettingsModal';
 import TeamHub from './components/TeamHub';
 import { checkAndNotifyTasks } from './services/zaloService';
-import { storageService } from './services/storageService';
+import { api } from './services/api'; // Import API instead of storageService
 
 const App: React.FC = () => {
   // State
+  const [isLoading, setIsLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [goals, setGoals] = useState<ProjectGoal[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('BOARD');
   const [zaloSettings, setZaloSettings] = useState<ZaloSettings>({
-    enabled: false,
-    oaId: '',
-    checkInterval: 1, 
-    notifyUpcoming: true,
-    notifyOverdue: true
+    enabled: false, oaId: '', checkInterval: 1, notifyUpcoming: true, notifyOverdue: true
   });
   
   // Modals
@@ -40,58 +37,69 @@ const App: React.FC = () => {
   const [editingGoal, setEditingGoal] = useState<ProjectGoal | undefined>(undefined);
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>(TaskStatus.TODO);
 
-  // Data Loading Function
-  const loadData = () => {
-      setTasks(storageService.getTasks());
-      setGoals(storageService.getGoals());
-      setMembers(storageService.getMembers());
-      setZaloSettings(storageService.getSettings());
+  // --- DATA LOADING (Async) ---
+  const loadData = async () => {
+      setIsLoading(true);
+      try {
+          const data = await api.getData();
+          setTasks(data.tasks);
+          setGoals(data.goals);
+          setMembers(data.members);
+          setZaloSettings(data.settings);
+      } catch (e) {
+          console.error("Failed to load data", e);
+          alert("Không thể kết nối với máy chủ.");
+      } finally {
+          setIsLoading(false);
+      }
   };
 
-  // Initial Load
   useEffect(() => {
     loadData();
   }, []);
 
-  // Persist Changes
-  useEffect(() => {
-    storageService.saveTasks(tasks);
-  }, [tasks]);
-
-  useEffect(() => {
-    storageService.saveGoals(goals);
-  }, [goals]);
-
-  useEffect(() => {
-    storageService.saveSettings(zaloSettings);
-  }, [zaloSettings]);
+  // --- DATA PERSISTENCE (Async Sync) ---
+  // Note: In a real React app, we might use React Query or separate save handlers.
+  // For this architecture, we sync whenever state changes.
   
   useEffect(() => {
-    storageService.saveMembers(members);
-  }, [members]);
+    if (!isLoading) api.saveTasks(tasks);
+  }, [tasks, isLoading]);
 
-  // Automatic Notification Loop
   useEffect(() => {
-    if (!zaloSettings.enabled) return;
+    if (!isLoading) api.saveGoals(goals);
+  }, [goals, isLoading]);
 
-    // Initial check
+  useEffect(() => {
+    if (!isLoading) api.saveSettings(zaloSettings);
+  }, [zaloSettings, isLoading]);
+  
+  useEffect(() => {
+    if (!isLoading) api.saveMembers(members);
+  }, [members, isLoading]);
+
+  // --- NOTIFICATION LOOP ---
+  useEffect(() => {
+    if (!zaloSettings.enabled || isLoading) return;
+
     const runCheck = async () => {
-        await checkAndNotifyTasks(tasks, members, zaloSettings, handleNotificationSent);
+        // We pass a dummy callback because api handles logic now
+        const updatedTasks = await checkAndNotifyTasks(() => {});
+        if (updatedTasks) {
+            setTasks(updatedTasks);
+        }
     };
-    runCheck();
+    
+    // Run after a short delay to ensure load is complete
+    const timeoutId = setTimeout(runCheck, 5000); 
 
-    // Loop
     const intervalId = setInterval(runCheck, zaloSettings.checkInterval * 60 * 1000);
-    return () => clearInterval(intervalId);
-  }, [tasks, zaloSettings, members]);
-
-  const handleNotificationSent = (taskId: string, status: 'UPCOMING' | 'OVERDUE') => {
-      setTasks(prevTasks => prevTasks.map(t => 
-        t.id === taskId 
-            ? { ...t, lastNotificationSent: Date.now(), notificationStatus: status } 
-            : t
-      ));
-  };
+    
+    return () => {
+        clearTimeout(timeoutId);
+        clearInterval(intervalId);
+    };
+  }, [zaloSettings, isLoading]); // Removed 'tasks' dependency to avoid loop, backend handles source of truth
 
   /**
    * Helper to recalculate goal progress based on KRs
@@ -214,7 +222,6 @@ const App: React.FC = () => {
       setIsGoalModalOpen(true);
   };
 
-  // Data Refresh Callback
   const handleDataImported = () => {
       loadData();
       setViewMode('BOARD');
@@ -224,6 +231,19 @@ const App: React.FC = () => {
       setSettingsInitialTab(tab);
       setIsSettingsModalOpen(true);
   };
+
+  // Loading Screen
+  if (isLoading) {
+      return (
+          <div className="h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
+              <div className="w-12 h-12 bg-blue-600 rounded-xl animate-bounce flex items-center justify-center text-white font-bold text-xl">P</div>
+              <div className="flex items-center gap-2 text-slate-500 font-medium">
+                  <Loader2 className="animate-spin" size={20} />
+                  <span>Đang kết nối đến máy chủ...</span>
+              </div>
+          </div>
+      );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-slate-50">
@@ -238,7 +258,7 @@ const App: React.FC = () => {
           </span>
           <div className="hidden sm:flex items-center gap-1 ml-3 px-2 py-1 bg-green-50 text-green-600 rounded-full text-xs font-medium border border-green-100">
             <CloudCheck size={14} />
-            <span>Đã đồng bộ</span>
+            <span>Server Online</span>
           </div>
         </div>
 
@@ -359,7 +379,7 @@ const App: React.FC = () => {
         task={editingTask}
         initialStatus={newTaskStatus}
         goals={goals}
-        members={members} // Pass dynamic members
+        members={members}
       />
       
       <GoalModal
@@ -386,7 +406,7 @@ const App: React.FC = () => {
         initialTab={settingsInitialTab}
       />
 
-      {/* Pass tasks to AIChat to upgrade its brain with context */}
+      {/* Pass tasks to AIChat */}
       <AIChat tasks={tasks} />
     </div>
   );

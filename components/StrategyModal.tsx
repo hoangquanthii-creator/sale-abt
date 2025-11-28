@@ -1,8 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
-import { Task } from '../types';
+import { Task, ProjectGoal } from '../types';
 import { analyzeProjectStrategy } from '../services/geminiService';
+import { storageService } from '../services/storageService';
 import { X, BrainCircuit, Loader2, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { DEMO_OKRS } from '../constants';
 
 interface StrategyModalProps {
   isOpen: boolean;
@@ -16,8 +19,14 @@ const StrategyModal: React.FC<StrategyModalProps> = ({ isOpen, onClose, tasks })
   const [hasRun, setHasRun] = useState(false);
 
   useEffect(() => {
-    if (isOpen && !hasRun) {
-      handleAnalyze();
+    if (isOpen) {
+      const savedAnalysis = storageService.getLastStrategy();
+      if (savedAnalysis) {
+          setAnalysis(savedAnalysis);
+          setHasRun(true);
+      } else if (!hasRun) {
+          handleAnalyze();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -26,8 +35,13 @@ const StrategyModal: React.FC<StrategyModalProps> = ({ isOpen, onClose, tasks })
     setLoading(true);
     setHasRun(true);
     try {
-      const result = await analyzeProjectStrategy(tasks);
+      // Fetch current goals from local storage to ensure fresh data
+      const savedGoals = localStorage.getItem('planai-goals');
+      const currentGoals: ProjectGoal[] = savedGoals ? JSON.parse(savedGoals) : DEMO_OKRS;
+
+      const result = await analyzeProjectStrategy(tasks, currentGoals);
       setAnalysis(result);
+      storageService.saveStrategy(result);
     } catch (e) {
       setAnalysis("Lỗi khi chạy phân tích.");
     } finally {
@@ -47,7 +61,7 @@ const StrategyModal: React.FC<StrategyModalProps> = ({ isOpen, onClose, tasks })
               <BrainCircuit size={24} className="text-purple-300" />
             </div>
             <div>
-              <h2 className="text-xl font-bold">Phân tích Chiến lược</h2>
+              <h2 className="text-xl font-bold">Phân tích Chiến lược & OKRs</h2>
               <p className="text-sm text-slate-400">Tư duy sâu (Thinking Mode) bởi Gemini 3 Pro</p>
             </div>
           </div>
@@ -66,7 +80,7 @@ const StrategyModal: React.FC<StrategyModalProps> = ({ isOpen, onClose, tasks })
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-slate-800">Đang suy nghĩ...</h3>
-                <p className="text-slate-500 max-w-md mt-2">Tôi đang phân tích các nhiệm vụ, tìm điểm nghẽn và mô phỏng kết quả. Quá trình này có thể mất vài giây.</p>
+                <p className="text-slate-500 max-w-md mt-2">Tôi đang rà soát sự liên kết giữa Công việc hàng ngày và Mục tiêu OKR, tìm điểm nghẽn và rủi ro.</p>
               </div>
             </div>
           ) : (

@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Plus, BrainCircuit, Target, Settings } from 'lucide-react';
-import { Task, TaskStatus, ViewMode, Priority, ProjectGoal, ZaloSettings } from './types';
+import { LayoutDashboard, Kanban, Plus, BrainCircuit, Target, Settings, Sparkles, MonitorPlay, Users, CloudCheck } from 'lucide-react';
+import { Task, TaskStatus, ViewMode, Priority, ProjectGoal, ZaloSettings, KeyResult, TeamMember } from './types';
 import KanbanBoard from './components/KanbanBoard';
 import TaskModal from './components/TaskModal';
 import AIChat from './components/AIChat';
@@ -9,17 +10,20 @@ import StrategyModal from './components/StrategyModal';
 import GoalList from './components/GoalList';
 import GoalModal from './components/GoalModal';
 import SettingsModal from './components/SettingsModal';
+import TeamHub from './components/TeamHub';
 import { checkAndNotifyTasks } from './services/zaloService';
+import { storageService } from './services/storageService';
 
 const App: React.FC = () => {
   // State
   const [tasks, setTasks] = useState<Task[]>([]);
   const [goals, setGoals] = useState<ProjectGoal[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('BOARD');
   const [zaloSettings, setZaloSettings] = useState<ZaloSettings>({
     enabled: false,
     oaId: '',
-    checkInterval: 1, // check every 1 minute for demo
+    checkInterval: 1, 
     notifyUpcoming: true,
     notifyOverdue: true
   });
@@ -29,100 +33,42 @@ const App: React.FC = () => {
   const [isStrategyModalOpen, setIsStrategyModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'zalo' | 'team' | 'data'>('zalo');
 
   // Edit states
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [editingGoal, setEditingGoal] = useState<ProjectGoal | undefined>(undefined);
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>(TaskStatus.TODO);
 
-  // Load initial data
+  // Data Loading Function
+  const loadData = () => {
+      setTasks(storageService.getTasks());
+      setGoals(storageService.getGoals());
+      setMembers(storageService.getMembers());
+      setZaloSettings(storageService.getSettings());
+  };
+
+  // Initial Load
   useEffect(() => {
-    const savedTasks = localStorage.getItem('planai-tasks');
-    const savedGoals = localStorage.getItem('planai-goals');
-    const savedSettings = localStorage.getItem('planai-settings');
-
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
-    } else {
-      // Demo tasks
-      const demoTasks: Task[] = [
-        {
-            id: '1',
-            title: 'Nghiên cứu đối thủ cạnh tranh',
-            description: 'Phân tích 3 đối thủ dẫn đầu thị trường và tính năng nổi bật của họ.',
-            status: TaskStatus.DONE,
-            priority: Priority.HIGH,
-            subtasks: [],
-            assignee: 'Nguyễn Văn An',
-            startDate: Date.now() - 86400000 * 5, 
-            dueDate: Date.now() - 86400000, 
-            createdAt: Date.now(),
-            tags: []
-        },
-        {
-            id: '2',
-            title: 'Phác thảo giao diện (Design System)',
-            description: 'Tạo bảng màu và font chữ cơ bản cho ứng dụng.',
-            status: TaskStatus.IN_PROGRESS,
-            priority: Priority.MEDIUM,
-            subtasks: [{id: 's1', title: 'Chọn màu chủ đạo', completed: true}, {id: 's2', title: 'Chọn font chữ', completed: false}],
-            assignee: 'Trần Thị Bình',
-            startDate: Date.now(),
-            dueDate: Date.now() + 86400000 * 3,
-            createdAt: Date.now(),
-            tags: []
-        },
-        {
-            id: '3',
-            title: 'Thiết lập API Backend',
-            description: 'Khởi tạo Node.js server và kết nối cơ sở dữ liệu.',
-            status: TaskStatus.TODO,
-            priority: Priority.URGENT,
-            subtasks: [],
-            assignee: 'Lê Hoàng Minh',
-            startDate: Date.now() + 86400000,
-            dueDate: Date.now() + 86400000 * 7,
-            createdAt: Date.now(),
-            tags: []
-        }
-      ];
-      setTasks(demoTasks as any);
-    }
-
-    if (savedGoals) {
-        setGoals(JSON.parse(savedGoals));
-    } else {
-        // Demo Goals
-        const demoGoals: ProjectGoal[] = [
-            {
-                id: 'g1',
-                title: 'Ra mắt phiên bản Beta',
-                description: 'Hoàn thiện các tính năng cốt lõi và phát hành cho 500 người dùng thử nghiệm đầu tiên.',
-                deadline: Date.now() + 86400000 * 30, // 30 days later
-                progress: 45,
-                createdAt: Date.now()
-            }
-        ];
-        setGoals(demoGoals);
-    }
-
-    if (savedSettings) {
-        setZaloSettings(JSON.parse(savedSettings));
-    }
+    loadData();
   }, []);
 
-  // Save on change
+  // Persist Changes
   useEffect(() => {
-    localStorage.setItem('planai-tasks', JSON.stringify(tasks));
+    storageService.saveTasks(tasks);
   }, [tasks]);
 
   useEffect(() => {
-    localStorage.setItem('planai-goals', JSON.stringify(goals));
+    storageService.saveGoals(goals);
   }, [goals]);
 
   useEffect(() => {
-    localStorage.setItem('planai-settings', JSON.stringify(zaloSettings));
+    storageService.saveSettings(zaloSettings);
   }, [zaloSettings]);
+  
+  useEffect(() => {
+    storageService.saveMembers(members);
+  }, [members]);
 
   // Automatic Notification Loop
   useEffect(() => {
@@ -130,14 +76,14 @@ const App: React.FC = () => {
 
     // Initial check
     const runCheck = async () => {
-        await checkAndNotifyTasks(tasks, zaloSettings, handleNotificationSent);
+        await checkAndNotifyTasks(tasks, members, zaloSettings, handleNotificationSent);
     };
     runCheck();
 
     // Loop
     const intervalId = setInterval(runCheck, zaloSettings.checkInterval * 60 * 1000);
     return () => clearInterval(intervalId);
-  }, [tasks, zaloSettings]);
+  }, [tasks, zaloSettings, members]);
 
   const handleNotificationSent = (taskId: string, status: 'UPCOMING' | 'OVERDUE') => {
       setTasks(prevTasks => prevTasks.map(t => 
@@ -147,17 +93,81 @@ const App: React.FC = () => {
       ));
   };
 
+  /**
+   * Helper to recalculate goal progress based on KRs
+   */
+  const calculateGoalProgress = (krs: KeyResult[]) => {
+    if (krs.length === 0) return 0;
+    const totalPercent = krs.reduce((acc, kr) => {
+        if (kr.targetValue === 0) return acc;
+        let p = (kr.currentValue / kr.targetValue) * 100;
+        if (p > 100) p = 100;
+        if (p < 0) p = 0;
+        return acc + p;
+    }, 0);
+    return Math.round(totalPercent / krs.length);
+  };
+
+  /**
+   * Updates OKR progress when a task's status or contribution changes.
+   */
+  const updateLinkedOKR = (oldTask: Task | undefined, newTask: Task) => {
+    if (!newTask.linkedKeyResultId) return;
+
+    let valueToAdd = 0;
+
+    if (newTask.status === TaskStatus.DONE && oldTask?.status !== TaskStatus.DONE) {
+        valueToAdd = newTask.contributionValue || 0;
+    }
+    else if (newTask.status !== TaskStatus.DONE && oldTask?.status === TaskStatus.DONE) {
+        valueToAdd = -(newTask.contributionValue || 0);
+    }
+    else if (newTask.status === TaskStatus.DONE && oldTask?.status === TaskStatus.DONE) {
+        valueToAdd = (newTask.contributionValue || 0) - (oldTask.contributionValue || 0);
+    }
+
+    if (valueToAdd === 0) return;
+
+    setGoals(prevGoals => {
+        return prevGoals.map(goal => {
+            const hasKR = goal.keyResults.some(kr => kr.id === newTask.linkedKeyResultId);
+            if (!hasKR) return goal;
+
+            const updatedKRs = goal.keyResults.map(kr => {
+                if (kr.id === newTask.linkedKeyResultId) {
+                    return { ...kr, currentValue: kr.currentValue + valueToAdd };
+                }
+                return kr;
+            });
+
+            return {
+                ...goal,
+                keyResults: updatedKRs,
+                progress: calculateGoalProgress(updatedKRs)
+            };
+        });
+    });
+  };
+
   // Task Handlers
   const handleSaveTask = (task: Task) => {
     if (editingTask) {
+      updateLinkedOKR(editingTask, task);
       setTasks(tasks.map(t => t.id === task.id ? task : t));
     } else {
+      if (task.status === TaskStatus.DONE) {
+         updateLinkedOKR(undefined, task);
+      }
       setTasks([...tasks, task]);
     }
   };
 
   const handleDeleteTask = (taskId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa công việc này không?')) {
+      const taskToDelete = tasks.find(t => t.id === taskId);
+      if (taskToDelete && taskToDelete.status === TaskStatus.DONE && taskToDelete.linkedKeyResultId) {
+         updateLinkedOKR(taskToDelete, { ...taskToDelete, status: TaskStatus.TODO }); 
+      }
       setTasks(tasks.filter(t => t.id !== taskId));
     }
   };
@@ -174,6 +184,8 @@ const App: React.FC = () => {
   };
 
   const handleUpdateTask = (updatedTask: Task) => {
+    const oldTask = tasks.find(t => t.id === updatedTask.id);
+    updateLinkedOKR(oldTask, updatedTask);
     setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
   };
 
@@ -192,7 +204,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteGoal = (id: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa mục tiêu này?')) {
+    if (window.confirm('Bạn có chắc chắn muốn xóa OKR này?')) {
         setGoals(goals.filter(g => g.id !== id));
     }
   };
@@ -200,6 +212,17 @@ const App: React.FC = () => {
   const handleAddGoal = () => {
       setEditingGoal(undefined);
       setIsGoalModalOpen(true);
+  };
+
+  // Data Refresh Callback
+  const handleDataImported = () => {
+      loadData();
+      setViewMode('BOARD');
+  };
+
+  const openSettings = (tab: 'zalo' | 'team' | 'data' = 'zalo') => {
+      setSettingsInitialTab(tab);
+      setIsSettingsModalOpen(true);
   };
 
   return (
@@ -213,22 +236,26 @@ const App: React.FC = () => {
           <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-700">
             PlanAI
           </span>
+          <div className="hidden sm:flex items-center gap-1 ml-3 px-2 py-1 bg-green-50 text-green-600 rounded-full text-xs font-medium border border-green-100">
+            <CloudCheck size={14} />
+            <span>Đã đồng bộ</span>
+          </div>
         </div>
 
-        <div className="flex bg-slate-100 p-1 rounded-lg">
+        <div className="hidden md:flex bg-slate-100 p-1 rounded-lg">
           <button
             onClick={() => setViewMode('BOARD')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'BOARD' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
             <Kanban size={16} />
-            Bảng
+            Bảng việc
           </button>
           <button
             onClick={() => setViewMode('GOALS')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'GOALS' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
             <Target size={16} />
-            Mục tiêu
+            Quản trị OKR
           </button>
           <button
             onClick={() => setViewMode('DASHBOARD')}
@@ -237,26 +264,39 @@ const App: React.FC = () => {
             <LayoutDashboard size={16} />
             Thống kê
           </button>
+          <button
+            onClick={() => setViewMode('TEAM_HUB')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'TEAM_HUB' ? 'bg-slate-800 text-white shadow-sm hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            <MonitorPlay size={16} />
+            Team Hub
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsSettingsModalOpen(true)}
+            onClick={() => openSettings('team')}
             className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors relative"
-            title="Cài đặt thông báo"
+            title="Quản lý thành viên"
+          >
+            <Users size={20} />
+          </button>
+
+          <button
+            onClick={() => openSettings('zalo')}
+            className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors relative"
+            title="Cài đặt hệ thống"
           >
             <Settings size={20} />
-            {zaloSettings.enabled && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-green-500 rounded-full border border-white"></span>
-            )}
           </button>
 
           <button
             onClick={() => setIsStrategyModalOpen(true)}
-            className="hidden md:flex items-center gap-2 px-4 py-2 text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg text-sm font-medium transition-colors border border-purple-200"
+            className="flex items-center gap-2 px-4 py-2 text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg text-sm font-bold transition-all shadow-md hover:shadow-lg"
+            title="Phân tích chiến lược & rủi ro"
           >
             <BrainCircuit size={16} />
-            Chiến lược
+            <span className="hidden sm:inline">Chiến lược</span>
           </button>
 
           {viewMode === 'GOALS' ? (
@@ -265,8 +305,10 @@ const App: React.FC = () => {
                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg"
              >
                <Plus size={18} />
-               <span className="hidden sm:inline">Thêm mục tiêu</span>
+               <span className="hidden sm:inline">Thêm OKR</span>
              </button>
+          ) : viewMode === 'TEAM_HUB' ? (
+            <div className="text-xs text-slate-400 font-medium px-2">Chế độ xem công khai</div>
           ) : (
              <button
                 onClick={() => handleAddTask(TaskStatus.TODO)}
@@ -284,6 +326,7 @@ const App: React.FC = () => {
         {viewMode === 'BOARD' && (
           <KanbanBoard
             tasks={tasks}
+            members={members}
             onTaskUpdate={handleUpdateTask}
             onTaskDelete={handleDeleteTask}
             onEditTask={handleEditTask}
@@ -291,7 +334,10 @@ const App: React.FC = () => {
           />
         )}
         {viewMode === 'DASHBOARD' && (
-          <Dashboard tasks={tasks} />
+          <Dashboard 
+            tasks={tasks} 
+            onOpenStrategy={() => setIsStrategyModalOpen(true)} 
+          />
         )}
         {viewMode === 'GOALS' && (
            <GoalList 
@@ -299,6 +345,9 @@ const App: React.FC = () => {
               onEdit={handleEditGoal}
               onDelete={handleDeleteGoal}
            />
+        )}
+        {viewMode === 'TEAM_HUB' && (
+            <TeamHub tasks={tasks} goals={goals} members={members} />
         )}
       </main>
 
@@ -309,6 +358,8 @@ const App: React.FC = () => {
         onSave={handleSaveTask}
         task={editingTask}
         initialStatus={newTaskStatus}
+        goals={goals}
+        members={members} // Pass dynamic members
       />
       
       <GoalModal
@@ -328,10 +379,15 @@ const App: React.FC = () => {
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
         settings={zaloSettings}
-        onSave={setZaloSettings}
+        onSaveSettings={setZaloSettings}
+        members={members}
+        onSaveMembers={setMembers}
+        onDataImported={handleDataImported}
+        initialTab={settingsInitialTab}
       />
 
-      <AIChat />
+      {/* Pass tasks to AIChat to upgrade its brain with context */}
+      <AIChat tasks={tasks} />
     </div>
   );
 };

@@ -1,16 +1,39 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { sendChatMessage } from '../services/geminiService';
-import { ChatMessage } from '../types';
-import { MessageSquare, X, Send, User, Bot, Loader2 } from 'lucide-react';
+import { storageService } from '../services/storageService';
+import { ChatMessage, Task } from '../types';
+import { MessageSquare, X, Send, User, Bot, Loader2, Trash2 } from 'lucide-react';
 
-const AIChat: React.FC = () => {
+interface AIChatProps {
+    tasks: Task[];
+}
+
+const AIChat: React.FC<AIChatProps> = ({ tasks }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '1', role: 'model', text: 'Xin chào! Tôi là trợ lý AI. Tôi có thể giúp bạn lập kế hoạch, trả lời câu hỏi hoặc phân tích các vấn đề khó khăn. Bạn cần giúp gì không?' }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load History on Mount
+  useEffect(() => {
+    const history = storageService.getChatHistory();
+    if (history.length > 0) {
+      setMessages(history);
+    } else {
+      setMessages([
+        { id: '1', role: 'model', text: 'Xin chào! Tôi là trợ lý PlanAI. Tôi đã nắm được toàn bộ thông tin dự án hiện tại của bạn. Bạn cần hỏi gì về tiến độ, nhân sự hay cần ý tưởng mới?' }
+      ]);
+    }
+  }, []);
+
+  // Save History on Update
+  useEffect(() => {
+    if (messages.length > 0) {
+      storageService.saveChatHistory(messages);
+    }
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -35,7 +58,8 @@ const AIChat: React.FC = () => {
         parts: [{ text: m.text }]
       }));
 
-      const responseText = await sendChatMessage(history, userMsg.text);
+      // Pass tasks context to the service
+      const responseText = await sendChatMessage(history, userMsg.text, tasks);
       
       const botMsg: ChatMessage = { 
         id: crypto.randomUUID(), 
@@ -56,6 +80,14 @@ const AIChat: React.FC = () => {
     }
   };
 
+  const clearHistory = () => {
+    if (confirm('Bạn có chắc muốn xóa toàn bộ lịch sử trò chuyện?')) {
+        const initialMsg: ChatMessage = { id: '1', role: 'model', text: 'Xin chào! Tôi là trợ lý PlanAI. Dữ liệu chat đã được làm mới.' };
+        setMessages([initialMsg]);
+        storageService.saveChatHistory([initialMsg]);
+    }
+  };
+
   return (
     <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end pointer-events-none">
       {/* Chat Window */}
@@ -72,12 +104,17 @@ const AIChat: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-bold text-sm">Trợ lý PlanAI</h3>
-                <span className="text-xs text-blue-100">Luôn sẵn sàng hỗ trợ</span>
+                <span className="text-xs text-blue-100">Đã kết nối dữ liệu dự án</span>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded transition-colors">
-              <X size={18} />
-            </button>
+            <div className="flex items-center gap-1">
+                <button onClick={clearHistory} className="hover:bg-white/20 p-1.5 rounded transition-colors" title="Xóa lịch sử">
+                   <Trash2 size={16} />
+                </button>
+                <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1.5 rounded transition-colors">
+                   <X size={18} />
+                </button>
+            </div>
           </div>
 
           {/* Messages */}

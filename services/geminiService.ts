@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { MODEL_FAST, MODEL_SMART, THINKING_BUDGET } from "../constants";
-import { Task } from "../types";
+import { MODEL_FAST, MODEL_SMART, MODEL_CHAT, THINKING_BUDGET } from "../constants";
+import { Task, ProjectGoal } from "../types";
 
 // Initialize the client. API Key is expected in process.env.API_KEY
 const getAIClient = () => {
@@ -79,9 +79,51 @@ export const suggestDescription = async (taskTitle: string): Promise<string> => 
 };
 
 /**
- * Uses Gemini 3 Pro with Thinking for deep strategic analysis of the project.
+ * Uses Gemini to generate an image for the task.
  */
-export const analyzeProjectStrategy = async (tasks: Task[]): Promise<string> => {
+export const generateTaskImage = async (prompt: string): Promise<string | null> => {
+    const ai = getAIClient();
+    if (!ai) return null;
+
+    try {
+        // Using generateContent with specific prompting for image generation if the model supports it via tools or native generation
+        // Note: Currently mimicking the "Generate Images" behaviour via generateContent for the specific model as per instructions
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.0-flash-exp', // Using a model known for multimodal capabilities
+            contents: {
+                parts: [
+                    { text: "Generate an image: " + prompt }
+                ]
+            },
+            config: {
+                // Config for image generation if supported by the specific model endpoint
+            }
+        });
+
+        // Loop to find image part
+        if (response.candidates && response.candidates[0].content.parts) {
+            for (const part of response.candidates[0].content.parts) {
+                if (part.inlineData) {
+                    const base64String = part.inlineData.data;
+                    return `data:${part.inlineData.mimeType};base64,${base64String}`;
+                }
+            }
+        }
+        
+        // Fallback: If the API returns a text description instead of an image (common in text-only models), we can't show an image.
+        // For the purpose of this demo app, if no image is returned, we return null.
+        return null;
+    } catch (error) {
+        console.error("Error generating image:", error);
+        return null;
+    }
+};
+
+/**
+ * Uses Gemini 3 Pro with Thinking for deep strategic analysis of the project.
+ * Updated to include OKR analysis.
+ */
+export const analyzeProjectStrategy = async (tasks: Task[], goals?: ProjectGoal[]): Promise<string> => {
   const ai = getAIClient();
   if (!ai) return "Thiếu API Key.";
 
@@ -92,23 +134,38 @@ export const analyzeProjectStrategy = async (tasks: Task[]): Promise<string> => 
     assignee: t.assignee || "Chưa giao",
     meetingWith: t.meetingWith || "Không có",
     outcome: t.outcome || "Chưa có",
-    startDate: t.startDate ? new Date(t.startDate).toDateString() : "Chưa đặt",
     dueDate: t.dueDate ? new Date(t.dueDate).toDateString() : "Chưa đặt",
-    description: t.description
+    quickNote: t.quickNote || ""
   })));
 
+  const goalsJson = goals ? JSON.stringify(goals.map(g => ({
+      objective: g.title,
+      keyResults: g.keyResults?.map(kr => `${kr.title}: ${kr.currentValue}/${kr.targetValue} ${kr.unit}`),
+      deadline: new Date(g.deadline).toDateString()
+  }))) : "Chưa có mục tiêu OKR.";
+
   const prompt = `
-    Đây là trạng thái hiện tại của dự án dưới định dạng JSON:
+    Tôi đang cung cấp dữ liệu quản trị của công ty bao gồm:
+    1. DANH SÁCH CÔNG VIỆC (TASKS):
     ${tasksJson}
 
-    Hãy thực hiện một "Đánh giá Chiến lược Chuyên sâu" cho khối lượng công việc này bằng TIẾNG VIỆT.
-    1. **Phân bổ nguồn lực & Đối tác:** Phân tích cách phân chia công việc giữa các thành viên. Lưu ý đến các cuộc họp quan trọng (trường meetingWith). Có ai phải đi gặp khách hàng quá nhiều không?
-    2. **Hiệu quả thực hiện (Kết quả):** Dựa trên trường 'outcome' của các việc đã xong, đánh giá sơ bộ chất lượng công việc.
-    3. **Rủi ro tiến độ:** Xác định các công việc quá hạn hoặc có deadline gấp.
-    4. **Đề xuất:** Đưa ra thứ tự thực hiện tối ưu và đề xuất điều chuyển nhân sự nếu cần.
+    2. MỤC TIÊU & KẾT QUẢ THEN CHỐT (OKRs/KPIs):
+    ${goalsJson}
+
+    Đóng vai trò là một CEO dày dạn kinh nghiệm và Giám đốc Chiến lược, hãy phân tích trạng thái vận hành của doanh nghiệp bằng TIẾNG VIỆT (Sử dụng Thinking Mode):
+
+    **Phần 1: Sự liên kết Mục tiêu (Alignment Analysis) - QUAN TRỌNG**
+    - Đánh giá xem các công việc hàng ngày (Tasks) có đang thực sự đóng góp vào các OKRs không?
+    - Có Mục tiêu (Objective) nào đang bị bỏ rơi (không có task nào hỗ trợ) không? Cảnh báo ngay.
+
+    **Phần 2: Giám sát Hiệu suất & Rủi ro (Performance & Risk)**
+    - Phân tích tiến độ các Key Results. Chỉ số nào đang tụt hậu nguy hiểm?
+    - Ai trong đội ngũ đang làm việc hiệu quả/kém hiệu quả dựa trên tiến độ task?
+
+    **Phần 3: Chỉ đạo điều hành (Executive Action Plan)**
+    - Đưa ra 3 chỉ đạo cụ thể, ngắn gọn cho đội ngũ quản lý để cải thiện tình hình ngay lập tức.
     
-    Hãy suy nghĩ sâu sắc về sự phụ thuộc và nguyên tắc quản lý nguồn lực.
-    Trình bày câu trả lời dưới dạng Markdown rõ ràng, chuyên nghiệp.
+    Trình bày dưới dạng Markdown chuyên nghiệp. Dùng ngôn ngữ quản trị, dứt khoát.
   `;
 
   try {
@@ -128,17 +185,74 @@ export const analyzeProjectStrategy = async (tasks: Task[]): Promise<string> => 
 };
 
 /**
- * Chat with the AI Assistant.
+ * Uses Gemini to analyze Kanban Flow and suggest optimization.
+ * Focuses on WIP limits, Bottlenecks, and Flow Efficiency.
  */
-export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], message: string) => {
+export const analyzeKanbanWorkflow = async (tasks: Task[]): Promise<string> => {
+    const ai = getAIClient();
+    if (!ai) return "Thiếu API Key.";
+
+    // Simplify data for Kanban analysis
+    const boardState = tasks.map(t => ({
+        id: t.title, // Use title for readability in prompt
+        status: t.status, // TODO, IN_PROGRESS, REVIEW, DONE
+        assignee: t.assignee || "Unassigned",
+        priority: t.priority,
+        daysOpen: Math.floor((Date.now() - t.createdAt) / (1000 * 60 * 60 * 24))
+    }));
+
+    const prompt = `
+      Bạn là một Agile Coach / Scrum Master chuyên nghiệp. Hãy phân tích bảng Kanban hiện tại của nhóm:
+      ${JSON.stringify(boardState)}
+
+      Nhiệm vụ: Tối ưu hóa luồng công việc (Workflow) để tăng tốc độ hoàn thành và giảm tắc nghẽn.
+      
+      Hãy đưa ra báo cáo ngắn gọn gồm 3 phần:
+      1. **Điểm nghẽn (Bottlenecks):** Cột nào đang bị ùn ứ (quá nhiều thẻ)? Ai đang ôm đồm quá nhiều việc (WIP cao)?
+      2. **Đề xuất di chuyển:** Cụ thể cần ưu tiên làm xong task nào trước? Task nào nên tạm dừng?
+      3. **Hành động ngay:** 3 việc cần làm ngay lập tức trên bảng này.
+
+      Trả lời bằng Tiếng Việt, dùng Markdown, giọng văn tích cực, thúc đẩy hành động.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: MODEL_SMART, // Thinking model is good for logic flow
+            contents: prompt,
+            config: {
+                thinkingConfig: { thinkingBudget: THINKING_BUDGET }
+            }
+        });
+        return response.text || "Không có đề xuất.";
+    } catch (error) {
+        console.error("Error analyzing workflow:", error);
+        return "Lỗi khi phân tích luồng công việc.";
+    }
+};
+
+/**
+ * Chat with the AI Assistant with Context Awareness.
+ */
+export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], message: string, tasksContext?: Task[]) => {
   const ai = getAIClient();
   if (!ai) throw new Error("API Key missing");
 
+  // Create a system instruction that includes the current state of the board
+  let systemInstruction = "Bạn là PlanAI, một trợ lý quản lý dự án thông minh (Cấp độ CEO Assistant). Bạn trả lời ngắn gọn, chuyên nghiệp và khích lệ bằng TIẾNG VIỆT.";
+  
+  if (tasksContext && tasksContext.length > 0) {
+      const taskSummary = tasksContext.map(t => 
+        `- [${t.status}] ${t.title} (${t.priority}, Người làm: ${t.assignee || 'Chưa giao'})`
+      ).join('\n');
+      
+      systemInstruction += `\n\nĐây là dữ liệu thời gian thực về dự án hiện tại. Hãy sử dụng thông tin này để trả lời câu hỏi của người dùng nếu liên quan:\n${taskSummary}`;
+  }
+
   const chat = ai.chats.create({
-    model: MODEL_SMART,
+    model: MODEL_CHAT,
     history: history,
     config: {
-      systemInstruction: "Bạn là PlanAI, một trợ lý quản lý dự án và năng suất chuyên nghiệp. Bạn giúp người dùng tổ chức công việc, chia nhỏ các vấn đề phức tạp và duy trì động lực. Bạn trả lời ngắn gọn, chuyên nghiệp và khích lệ bằng TIẾNG VIỆT.",
+      systemInstruction: systemInstruction,
     }
   });
 

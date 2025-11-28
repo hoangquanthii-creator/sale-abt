@@ -1,5 +1,4 @@
-import { Task, TaskStatus, ZaloSettings } from "../types";
-import { TEAM_MEMBERS } from "../constants";
+import { Task, TaskStatus, ZaloSettings, TeamMember } from "../types";
 
 // Mock function to simulate sending a Zalo ZNS/Message
 // In a real app, this would call your backend which holds the Zalo Secret Key
@@ -12,6 +11,7 @@ const callZaloApi = async (phone: string, message: string): Promise<boolean> => 
 
 export const checkAndNotifyTasks = async (
   tasks: Task[], 
+  members: TeamMember[],
   settings: ZaloSettings,
   onNotificationSent: (taskId: string, status: 'UPCOMING' | 'OVERDUE') => void
 ) => {
@@ -25,7 +25,7 @@ export const checkAndNotifyTasks = async (
     if (!task.dueDate) continue;
     if (!task.assignee) continue;
 
-    const assigneeInfo = TEAM_MEMBERS.find(m => m.name === task.assignee);
+    const assigneeInfo = members.find(m => m.name === task.assignee);
     if (!assigneeInfo || !assigneeInfo.phone) continue;
 
     const timeDiff = task.dueDate - now;

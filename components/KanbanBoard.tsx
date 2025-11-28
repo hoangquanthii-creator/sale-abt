@@ -1,18 +1,21 @@
+
 import React, { useState } from 'react';
-import { Task, TaskStatus, Priority } from '../types';
-import { COLUMNS, TEAM_MEMBERS, PRIORITY_LABELS } from '../constants';
+import { Task, TaskStatus, Priority, TeamMember } from '../types';
+import { COLUMNS, PRIORITY_LABELS } from '../constants';
 import TaskCard from './TaskCard';
-import { Plus, Search, Filter, X, User, Calendar, AlertCircle } from 'lucide-react';
+import WorkflowAnalysisModal from './WorkflowAnalysisModal';
+import { Plus, Search, Filter, X, User, Calendar, AlertCircle, GitMerge } from 'lucide-react';
 
 interface KanbanBoardProps {
   tasks: Task[];
+  members: TeamMember[]; // Received from App
   onTaskUpdate: (task: Task) => void;
   onTaskDelete: (taskId: string) => void;
   onEditTask: (task: Task) => void;
   onAddTask: (status: TaskStatus) => void;
 }
 
-const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate, onTaskDelete, onEditTask, onAddTask }) => {
+const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, members, onTaskUpdate, onTaskDelete, onEditTask, onAddTask }) => {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -22,6 +25,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate, onTaskDe
   const [filterPriority, setFilterPriority] = useState('');
   const [filterDateStart, setFilterDateStart] = useState('');
   const [filterDateEnd, setFilterDateEnd] = useState('');
+
+  // Workflow Analysis Modal
+  const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState(false);
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     setDraggedTaskId(taskId);
@@ -84,8 +90,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate, onTaskDe
     }
     if (filterDateEnd) {
       // Include the whole end day (23:59:59 approximately)
-      // Since input date is UTC midnight usually, we add 1 day minus 1ms
-      // But strictly comparing < next_day_timestamp is safer.
       const endTs = new Date(filterDateEnd).getTime() + 86400000;
       if (!task.dueDate || task.dueDate >= endTs) return false;
     }
@@ -118,23 +122,35 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate, onTaskDe
              />
           </div>
 
-          {/* Filter Toggle */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-sm font-medium ${
-              showFilters || activeFiltersCount > 0
-                ? 'bg-blue-50 border-blue-200 text-blue-700'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <Filter size={18} />
-            <span>Bộ lọc</span>
-            {activeFiltersCount > 0 && (
-              <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                {activeFiltersCount}
-              </span>
-            )}
-          </button>
+          <div className="flex gap-2">
+             {/* Optimize Flow Button */}
+             <button
+               onClick={() => setIsWorkflowModalOpen(true)}
+               className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-all shadow-sm"
+               title="Phân tích và tối ưu luồng công việc"
+             >
+               <GitMerge size={18} />
+               <span className="hidden sm:inline">Tối ưu luồng</span>
+             </button>
+
+             {/* Filter Toggle */}
+             <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-sm font-medium ${
+                showFilters || activeFiltersCount > 0
+                    ? 'bg-blue-50 border-blue-200 text-blue-700'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+            >
+                <Filter size={18} />
+                <span>Bộ lọc</span>
+                {activeFiltersCount > 0 && (
+                <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                    {activeFiltersCount}
+                </span>
+                )}
+            </button>
+          </div>
         </div>
 
         {/* Expanded Filters Panel */}
@@ -152,7 +168,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate, onTaskDe
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-blue-500 outline-none"
                 >
                   <option value="">Tất cả</option>
-                  {TEAM_MEMBERS.map(member => (
+                  {members.map(member => (
                     <option key={member.id} value={member.name}>{member.name}</option>
                   ))}
                 </select>
@@ -254,6 +270,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate, onTaskDe
                     <TaskCard
                       key={task.id}
                       task={task}
+                      members={members}
                       onEdit={onEditTask}
                       onDelete={onTaskDelete}
                       onDragStart={handleDragStart}
@@ -273,6 +290,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate, onTaskDe
           })}
         </div>
       </div>
+      
+      {/* Modals */}
+      <WorkflowAnalysisModal 
+         isOpen={isWorkflowModalOpen}
+         onClose={() => setIsWorkflowModalOpen(false)}
+         tasks={tasks}
+      />
     </div>
   );
 };

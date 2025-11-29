@@ -12,6 +12,10 @@ export const suggestDescription = async (taskTitle: string): Promise<string> => 
   return api.ai.suggestDescription(taskTitle);
 };
 
+export const suggestMeetingWith = async (taskTitle: string, taskDescription: string): Promise<string> => {
+  return api.ai.suggestMeetingWith(taskTitle, taskDescription);
+};
+
 export const generateTaskImage = async (prompt: string): Promise<string | null> => {
   return api.ai.generateImage(prompt);
 };

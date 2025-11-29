@@ -126,6 +126,30 @@ export const api = {
       }
     },
 
+    suggestMeetingWith: async (taskTitle: string, taskDescription: string): Promise<string> => {
+      await delay(500);
+      const ai = getAIClient();
+      if (!ai) return "";
+
+      const prompt = `
+        Dựa trên tên công việc: "${taskTitle}" và mô tả: "${taskDescription}".
+        Hãy trích xuất tên Người hoặc Tổ chức/Đối tác mà tôi cần gặp.
+        Nếu không có tên cụ thể, hãy suy luận vai trò (VD: "Nhà cung cấp", "Khách hàng mới", "HR Manager").
+        Trả về duy nhất 1 cụm từ ngắn gọn (dưới 5 từ). Không giải thích.
+      `;
+
+      try {
+        const response = await ai.models.generateContent({
+          model: MODEL_FAST,
+          contents: prompt,
+        });
+        return response.text?.trim() || "";
+      } catch (error) {
+        console.error("API Error:", error);
+        return "";
+      }
+    },
+
     generateImage: async (prompt: string): Promise<string | null> => {
       await delay(1000);
       const ai = getAIClient();

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Task, TaskStatus, Priority, Subtask, ProjectGoal, TeamMember } from '../types';
-import { suggestSubtasks, suggestDescription, generateTaskImage } from '../services/geminiService';
+import { suggestSubtasks, suggestDescription, generateTaskImage, suggestMeetingWith } from '../services/geminiService';
 import { PRIORITY_LABELS, COLUMNS, DEPARTMENTS } from '../constants';
 import { X, Sparkles, Plus, CheckSquare, Calendar, User, Loader2, Tag, Handshake, Award, StickyNote, Image as ImageIcon, Wand2, Target, Link } from 'lucide-react';
 
@@ -39,6 +39,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, in
 
   const [isGeneratingSubtasks, setIsGeneratingSubtasks] = useState(false);
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
+  const [isGeneratingMeeting, setIsGeneratingMeeting] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [imagePrompt, setImagePrompt] = useState('');
 
@@ -142,6 +143,21 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, in
         console.error(e);
     } finally {
         setIsGeneratingDesc(false);
+    }
+  };
+
+  const handleSuggestMeeting = async () => {
+    if (!title.trim()) return;
+    setIsGeneratingMeeting(true);
+    try {
+        const suggestion = await suggestMeetingWith(title, description);
+        if (suggestion) {
+            setMeetingWith(suggestion);
+        }
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setIsGeneratingMeeting(false);
     }
   };
 
@@ -323,17 +339,28 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, in
                     </div>
                     </div>
                     <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Gặp ai / Đối tác</label>
-                    <div className="relative">
-                        <Handshake size={18} className="absolute left-3 top-2.5 text-slate-400" />
-                        <input
-                        type="text"
-                        value={meetingWith}
-                        onChange={(e) => setMeetingWith(e.target.value)}
-                        placeholder="KH, Đối tác..."
-                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 bg-white focus:border-blue-500 outline-none"
-                        />
-                    </div>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-sm font-medium text-slate-700">Gặp ai / Đối tác</label>
+                            <button
+                                onClick={handleSuggestMeeting}
+                                disabled={!title || isGeneratingMeeting}
+                                className="flex items-center gap-1 text-[10px] font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded transition-colors disabled:opacity-50"
+                                title="Gợi ý đối tác dựa trên nội dung"
+                            >
+                                {isGeneratingMeeting ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                                AI Gợi ý
+                            </button>
+                        </div>
+                        <div className="relative">
+                            <Handshake size={18} className="absolute left-3 top-2.5 text-slate-400" />
+                            <input
+                            type="text"
+                            value={meetingWith}
+                            onChange={(e) => setMeetingWith(e.target.value)}
+                            placeholder="KH, Đối tác..."
+                            className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 bg-white focus:border-blue-500 outline-none"
+                            />
+                        </div>
                     </div>
                 </div>
 

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Task, TaskStatus, Priority, Subtask, ProjectGoal, TeamMember } from '../types';
 import { suggestSubtasks, suggestDescription, generateTaskImage } from '../services/geminiService';
-import { PRIORITY_LABELS, COLUMNS } from '../constants';
+import { PRIORITY_LABELS, COLUMNS, DEPARTMENTS } from '../constants';
 import { X, Sparkles, Plus, CheckSquare, Calendar, User, Loader2, Tag, Handshake, Award, StickyNote, Image as ImageIcon, Wand2, Target, Link } from 'lucide-react';
 
 interface TaskModalProps {
@@ -302,9 +302,23 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, in
                         className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 bg-white focus:border-blue-500 outline-none appearance-none"
                         >
                         <option value="">Chưa giao</option>
-                        {members.map(member => (
-                            <option key={member.id} value={member.name}>{member.name}</option>
-                        ))}
+                        {DEPARTMENTS.map(dept => {
+                            const deptMembers = members.filter(m => m.department === dept);
+                            if (deptMembers.length === 0) return null;
+                            return (
+                                <optgroup key={dept} label={dept}>
+                                    {deptMembers.map(member => (
+                                        <option key={member.id} value={member.name}>{member.name}</option>
+                                    ))}
+                                </optgroup>
+                            );
+                        })}
+                        {/* Fallback for members with no dept matching constants */}
+                        <optgroup label="Khác">
+                             {members.filter(m => !m.department || !DEPARTMENTS.includes(m.department)).map(member => (
+                                 <option key={member.id} value={member.name}>{member.name}</option>
+                             ))}
+                        </optgroup>
                         </select>
                     </div>
                     </div>

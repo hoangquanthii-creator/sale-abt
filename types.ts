@@ -26,6 +26,7 @@ export interface TeamMember {
   color: string;
   phone?: string; // For Zalo integration
   role?: string; // e.g., 'Admin', 'Member'
+  department?: string; // e.g. 'Sales', 'Tech'
 }
 
 export interface Task {
@@ -98,4 +99,4 @@ export interface BackupData {
   lastWorkflowAnalysis?: string;
 }
 
-export type ViewMode = 'BOARD' | 'LIST' | 'DASHBOARD' | 'STRATEGY' | 'GOALS' | 'TEAM_HUB';
+export type ViewMode = 'BOARD' | 'LIST' | 'DASHBOARD' | 'STRATEGY' | 'GOALS' | 'TEAM_HUB' | 'TEAM_MANAGER';

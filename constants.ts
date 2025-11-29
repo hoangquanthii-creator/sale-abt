@@ -43,12 +43,22 @@ export const TAG_COLORS = [
   'bg-rose-100 text-rose-700 border-rose-200',
 ];
 
+export const DEPARTMENTS = [
+    'Ban Giám Đốc',
+    'Kinh Doanh',
+    'Marketing',
+    'Kỹ Thuật / IT',
+    'Nhân Sự / Admin',
+    'Kế Toán / Tài Chính'
+];
+
 // Default Members (Initial State)
 export const DEFAULT_MEMBERS: TeamMember[] = [
-  { id: 'u1', name: 'Nguyễn Văn An', initials: 'NA', color: 'bg-red-100 text-red-600', phone: '0901xxx111', role: 'Leader' },
-  { id: 'u2', name: 'Trần Thị Bình', initials: 'TB', color: 'bg-green-100 text-green-600', phone: '0902xxx222', role: 'Member' },
-  { id: 'u3', name: 'Lê Hoàng Minh', initials: 'HM', color: 'bg-blue-100 text-blue-600', phone: '0903xxx333', role: 'Member' },
-  { id: 'u4', name: 'Phạm Thu Thảo', initials: 'PT', color: 'bg-yellow-100 text-yellow-600', phone: '0904xxx444', role: 'Member' },
+  { id: 'u1', name: 'Nguyễn Văn An', initials: 'NA', color: 'bg-red-100 text-red-600', phone: '0901xxx111', role: 'CEO', department: 'Ban Giám Đốc' },
+  { id: 'u2', name: 'Trần Thị Bình', initials: 'TB', color: 'bg-green-100 text-green-600', phone: '0902xxx222', role: 'Sales Lead', department: 'Kinh Doanh' },
+  { id: 'u3', name: 'Lê Hoàng Minh', initials: 'HM', color: 'bg-blue-100 text-blue-600', phone: '0903xxx333', role: 'Tech Lead', department: 'Kỹ Thuật / IT' },
+  { id: 'u4', name: 'Phạm Thu Thảo', initials: 'PT', color: 'bg-yellow-100 text-yellow-600', phone: '0904xxx444', role: 'Marketing Lead', department: 'Marketing' },
+  { id: 'u5', name: 'Đỗ Văn Cường', initials: 'DC', color: 'bg-purple-100 text-purple-600', phone: '0905xxx555', role: 'Developer', department: 'Kỹ Thuật / IT' },
 ];
 
 export const MEMBER_COLORS = [

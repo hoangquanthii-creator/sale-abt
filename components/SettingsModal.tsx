@@ -1,9 +1,8 @@
 
 import React, { useState, useRef } from 'react';
 import { ZaloSettings, TeamMember } from '../types';
-import { MEMBER_COLORS } from '../constants';
 import { storageService } from '../services/storageService';
-import { X, MessageCircle, Save, Users, Database, Upload, Download, Trash2, Plus, RefreshCw } from 'lucide-react';
+import { X, MessageCircle, Save, Database, Upload, Download } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -13,66 +12,34 @@ interface SettingsModalProps {
   members: TeamMember[];
   onSaveMembers: (members: TeamMember[]) => void;
   onDataImported: () => void;
-  initialTab?: 'zalo' | 'team' | 'data'; // New prop
+  initialTab?: 'zalo' | 'data'; 
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
   isOpen, onClose, settings, onSaveSettings, members, onSaveMembers, onDataImported, initialTab = 'zalo'
 }) => {
-  const [activeTab, setActiveTab] = useState<'zalo' | 'team' | 'data'>('zalo');
+  const [activeTab, setActiveTab] = useState<'zalo' | 'data'>('zalo');
   
   // Local states
   const [localSettings, setLocalSettings] = useState<ZaloSettings>(settings);
-  const [localMembers, setLocalMembers] = useState<TeamMember[]>(members);
-  
-  // New Member Input
-  const [newMemberName, setNewMemberName] = useState('');
-  const [newMemberPhone, setNewMemberPhone] = useState('');
 
   // File Input Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     setLocalSettings(settings);
-    setLocalMembers(members);
-  }, [settings, members, isOpen]);
+  }, [settings, isOpen]);
 
   // Sync active tab with initialTab prop when modal opens
   React.useEffect(() => {
-    if (isOpen) {
+    if (isOpen && (initialTab === 'zalo' || initialTab === 'data')) {
         setActiveTab(initialTab);
     }
   }, [isOpen, initialTab]);
 
   const handleSaveAll = () => {
     onSaveSettings(localSettings);
-    onSaveMembers(localMembers);
     onClose();
-  };
-
-  // Team Management
-  const addMember = () => {
-      if (!newMemberName.trim()) return;
-      const initials = newMemberName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-      const randomColor = MEMBER_COLORS[Math.floor(Math.random() * MEMBER_COLORS.length)];
-      
-      const newMember: TeamMember = {
-          id: crypto.randomUUID(),
-          name: newMemberName,
-          phone: newMemberPhone,
-          initials: initials,
-          color: randomColor,
-          role: 'Member'
-      };
-      setLocalMembers([...localMembers, newMember]);
-      setNewMemberName('');
-      setNewMemberPhone('');
-  };
-
-  const removeMember = (id: string) => {
-      if (confirm('Xóa thành viên này sẽ không xóa các công việc cũ của họ, nhưng họ sẽ không xuất hiện trong danh sách giao việc. Tiếp tục?')) {
-          setLocalMembers(localMembers.filter(m => m.id !== id));
-      }
   };
 
   // Data Management
@@ -131,13 +98,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             >
                 <MessageCircle size={16} />
                 Thông báo Zalo
-            </button>
-            <button 
-                onClick={() => setActiveTab('team')}
-                className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 flex items-center justify-center gap-2 ${activeTab === 'team' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-            >
-                <Users size={16} />
-                Đội ngũ
             </button>
             <button 
                 onClick={() => setActiveTab('data')}
@@ -205,50 +165,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                     )}
                  </div>
-            )}
-
-            {/* TAB TEAM */}
-            {activeTab === 'team' && (
-                <div className="space-y-6">
-                    <div className="flex gap-2">
-                        <input 
-                            type="text" 
-                            value={newMemberName}
-                            onChange={(e) => setNewMemberName(e.target.value)}
-                            placeholder="Tên thành viên mới..."
-                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-blue-500 outline-none"
-                        />
-                        <input 
-                            type="text" 
-                            value={newMemberPhone}
-                            onChange={(e) => setNewMemberPhone(e.target.value)}
-                            placeholder="SĐT/Zalo..."
-                            className="w-32 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-blue-500 outline-none"
-                        />
-                        <button onClick={addMember} disabled={!newMemberName} className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                            <Plus size={18} />
-                        </button>
-                    </div>
-
-                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                        {localMembers.map(member => (
-                            <div key={member.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${member.color}`}>
-                                        {member.initials}
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-slate-800 text-sm">{member.name}</p>
-                                        <p className="text-xs text-slate-500">{member.phone || 'Chưa có SĐT'}</p>
-                                    </div>
-                                </div>
-                                <button onClick={() => removeMember(member.id)} className="text-slate-400 hover:text-red-500">
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
             )}
 
             {/* TAB DATA */}

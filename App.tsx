@@ -11,8 +11,9 @@ import GoalList from './components/GoalList';
 import GoalModal from './components/GoalModal';
 import SettingsModal from './components/SettingsModal';
 import TeamHub from './components/TeamHub';
+import TeamManager from './components/TeamManager'; // Import TeamManager
 import { checkAndNotifyTasks } from './services/zaloService';
-import { api } from './services/api'; // Import API instead of storageService
+import { api } from './services/api';
 
 const App: React.FC = () => {
   // State
@@ -30,7 +31,7 @@ const App: React.FC = () => {
   const [isStrategyModalOpen, setIsStrategyModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'zalo' | 'team' | 'data'>('zalo');
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'zalo' | 'data'>('zalo');
 
   // Edit states
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
@@ -59,8 +60,6 @@ const App: React.FC = () => {
   }, []);
 
   // --- DATA PERSISTENCE (Async Sync) ---
-  // Note: In a real React app, we might use React Query or separate save handlers.
-  // For this architecture, we sync whenever state changes.
   
   useEffect(() => {
     if (!isLoading) api.saveTasks(tasks);
@@ -83,7 +82,6 @@ const App: React.FC = () => {
     if (!zaloSettings.enabled || isLoading) return;
 
     const runCheck = async () => {
-        // We pass a dummy callback because api handles logic now
         const updatedTasks = await checkAndNotifyTasks(() => {});
         if (updatedTasks) {
             setTasks(updatedTasks);
@@ -99,7 +97,7 @@ const App: React.FC = () => {
         clearTimeout(timeoutId);
         clearInterval(intervalId);
     };
-  }, [zaloSettings, isLoading]); // Removed 'tasks' dependency to avoid loop, backend handles source of truth
+  }, [zaloSettings, isLoading]);
 
   /**
    * Helper to recalculate goal progress based on KRs
@@ -227,7 +225,7 @@ const App: React.FC = () => {
       setViewMode('BOARD');
   };
 
-  const openSettings = (tab: 'zalo' | 'team' | 'data' = 'zalo') => {
+  const openSettings = (tab: 'zalo' | 'data' = 'zalo') => {
       setSettingsInitialTab(tab);
       setIsSettingsModalOpen(true);
   };
@@ -285,6 +283,13 @@ const App: React.FC = () => {
             Thống kê
           </button>
           <button
+            onClick={() => setViewMode('TEAM_MANAGER')} // New Team Manager Button logic
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'TEAM_MANAGER' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            <Users size={16} />
+            Nhân sự
+          </button>
+          <button
             onClick={() => setViewMode('TEAM_HUB')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'TEAM_HUB' ? 'bg-slate-800 text-white shadow-sm hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700'}`}
           >
@@ -294,14 +299,6 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => openSettings('team')}
-            className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors relative"
-            title="Quản lý thành viên"
-          >
-            <Users size={20} />
-          </button>
-
           <button
             onClick={() => openSettings('zalo')}
             className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors relative"
@@ -327,8 +324,8 @@ const App: React.FC = () => {
                <Plus size={18} />
                <span className="hidden sm:inline">Thêm OKR</span>
              </button>
-          ) : viewMode === 'TEAM_HUB' ? (
-            <div className="text-xs text-slate-400 font-medium px-2">Chế độ xem công khai</div>
+          ) : viewMode === 'TEAM_HUB' || viewMode === 'TEAM_MANAGER' ? ( // Hide add task on specialized pages
+             null
           ) : (
              <button
                 onClick={() => handleAddTask(TaskStatus.TODO)}
@@ -364,6 +361,12 @@ const App: React.FC = () => {
               goals={goals}
               onEdit={handleEditGoal}
               onDelete={handleDeleteGoal}
+           />
+        )}
+        {viewMode === 'TEAM_MANAGER' && (
+           <TeamManager 
+              members={members}
+              onUpdateMembers={setMembers}
            />
         )}
         {viewMode === 'TEAM_HUB' && (

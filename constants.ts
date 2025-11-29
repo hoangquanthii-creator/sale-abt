@@ -52,14 +52,8 @@ export const DEPARTMENTS = [
     'Kế Toán / Tài Chính'
 ];
 
-// Default Members (Initial State)
-export const DEFAULT_MEMBERS: TeamMember[] = [
-  { id: 'u1', name: 'Nguyễn Văn An', initials: 'NA', color: 'bg-red-100 text-red-600', phone: '0901xxx111', role: 'CEO', department: 'Ban Giám Đốc' },
-  { id: 'u2', name: 'Trần Thị Bình', initials: 'TB', color: 'bg-green-100 text-green-600', phone: '0902xxx222', role: 'Sales Lead', department: 'Kinh Doanh' },
-  { id: 'u3', name: 'Lê Hoàng Minh', initials: 'HM', color: 'bg-blue-100 text-blue-600', phone: '0903xxx333', role: 'Tech Lead', department: 'Kỹ Thuật / IT' },
-  { id: 'u4', name: 'Phạm Thu Thảo', initials: 'PT', color: 'bg-yellow-100 text-yellow-600', phone: '0904xxx444', role: 'Marketing Lead', department: 'Marketing' },
-  { id: 'u5', name: 'Đỗ Văn Cường', initials: 'DC', color: 'bg-purple-100 text-purple-600', phone: '0905xxx555', role: 'Developer', department: 'Kỹ Thuật / IT' },
-];
+// Default Members (Empty for real usage)
+export const DEFAULT_MEMBERS: TeamMember[] = [];
 
 export const MEMBER_COLORS = [
     'bg-red-100 text-red-600',
@@ -78,43 +72,13 @@ export const MEMBER_COLORS = [
     'bg-rose-100 text-rose-600',
 ];
 
-// Mock OKRs for CEO Dashboard
-export const DEMO_OKRS: ProjectGoal[] = [
-    {
-        id: 'g1',
-        title: 'Mở rộng thị phần miền Bắc (Objective)',
-        description: 'Tập trung đánh chiếm thị trường Hà Nội và các tỉnh lân cận trong Quý 1.',
-        deadline: Date.now() + 86400000 * 90, 
-        progress: 45,
-        keyResults: [
-            { id: 'kr1', title: 'Đạt doanh thu mới', currentValue: 2.5, targetValue: 6, unit: 'Tỷ VNĐ' },
-            { id: 'kr2', title: 'Mở rộng mạng lưới đại lý', currentValue: 12, targetValue: 20, unit: 'Đại lý' },
-            { id: 'kr3', title: 'Tỉ lệ khách hàng quay lại', currentValue: 15, targetValue: 30, unit: '%' }
-        ],
-        createdAt: Date.now()
-    },
-    {
-        id: 'g2',
-        title: 'Tối ưu hóa vận hành nội bộ (Objective)',
-        description: 'Giảm chi phí và tăng tốc độ xử lý đơn hàng.',
-        deadline: Date.now() + 86400000 * 60,
-        progress: 70,
-        keyResults: [
-            { id: 'kr4', title: 'Giảm thời gian giao hàng', currentValue: 48, targetValue: 24, unit: 'Giờ' }, // Note: For logic where lower is better, we might need more complex logic, but keeping simple for now
-            { id: 'kr5', title: 'Hoàn thành đào tạo nhân sự', currentValue: 80, targetValue: 100, unit: '%' }
-        ],
-        createdAt: Date.now()
-    }
-];
+// Empty OKRs for real usage
+export const DEMO_OKRS: ProjectGoal[] = [];
 
 // Gemini Models Configuration
-// Using confirmed available models to prevent 404 errors
-export const MODEL_FAST = 'gemini-2.0-flash-lite-preview-02-05'; // Actual working Flash Lite model
-export const MODEL_SMART = 'gemini-2.0-flash-thinking-exp-01-21'; // Actual working Thinking model
-export const MODEL_CHAT = 'gemini-2.0-flash'; // Balanced for chat
-export const MODEL_IMAGE = 'gemini-2.0-flash-exp'; // Using experimental flash for images as fallback to Pro if needed, or stick to the prompt's requested model if keys allow. 
-// NOTE: Ideally 'gemini-3-pro-image-preview' as requested, but using a safer bet for general availability if that one is gated. 
-// Let's set it to the one requested in the prompt, assuming the user has access.
-export const MODEL_IMAGE_REQ = 'gemini-2.0-flash'; // Using 2.0 Flash as it supports multimodal generation reliably in current preview.
-
-export const THINKING_BUDGET = 10240; // Adjusted budget for Thinking model
+export const MODEL_FAST = 'gemini-2.0-flash-lite-preview-02-05';
+export const MODEL_SMART = 'gemini-2.0-flash-thinking-exp-01-21';
+export const MODEL_CHAT = 'gemini-2.0-flash';
+export const MODEL_IMAGE = 'gemini-2.0-flash-exp';
+export const MODEL_IMAGE_REQ = 'gemini-2.0-flash';
+export const THINKING_BUDGET = 10240;

@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { ZaloSettings, TeamMember } from '../types';
 import { storageService } from '../services/storageService';
-import { X, MessageCircle, Save, Database, Upload, Download } from 'lucide-react';
+import { X, MessageCircle, Save, Database, Upload, Download, Trash2, AlertTriangle } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -75,6 +75,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           }
       };
       reader.readAsText(file);
+  };
+
+  const handleResetData = () => {
+      if (confirm("CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn toàn bộ Công việc, Mục tiêu, Nhân viên và Lịch sử Chat.\n\nBạn có chắc chắn muốn tiếp tục không?")) {
+          storageService.clearAllData();
+          alert("Dữ liệu đã được xóa. Ứng dụng sẽ tải lại.");
+          window.location.reload();
+      }
   };
 
   if (!isOpen) return null;
@@ -203,6 +211,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 accept=".json" 
                                 onChange={handleFileChange}
                             />
+                        </button>
+                     </div>
+
+                     <div className="pt-6 mt-6 border-t border-slate-100">
+                        <h3 className="font-semibold text-red-600 mb-2 flex items-center gap-2">
+                            <AlertTriangle size={18} /> Vùng Nguy Hiểm
+                        </h3>
+                         <button 
+                            onClick={handleResetData}
+                            className="w-full flex items-center justify-center gap-2 p-3 bg-red-50 text-red-600 border border-red-200 rounded-xl hover:bg-red-100 hover:border-red-300 transition-all font-medium"
+                        >
+                            <Trash2 size={18} />
+                            Xóa toàn bộ dữ liệu & Reset
                         </button>
                      </div>
                 </div>

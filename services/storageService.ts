@@ -1,6 +1,5 @@
 
 import { Task, ProjectGoal, ZaloSettings, TeamMember, BackupData, ChatMessage } from '../types';
-import { DEFAULT_MEMBERS, DEMO_OKRS } from '../constants';
 
 const KEYS = {
   TASKS: 'planai-tasks',
@@ -26,7 +25,7 @@ export const storageService = {
   // Goals
   getGoals: (): ProjectGoal[] => {
     const data = localStorage.getItem(KEYS.GOALS);
-    return data ? JSON.parse(data) : DEMO_OKRS;
+    return data ? JSON.parse(data) : [];
   },
   saveGoals: (goals: ProjectGoal[]) => {
     localStorage.setItem(KEYS.GOALS, JSON.stringify(goals));
@@ -50,7 +49,7 @@ export const storageService = {
   // Team Members
   getMembers: (): TeamMember[] => {
     const data = localStorage.getItem(KEYS.MEMBERS);
-    return data ? JSON.parse(data) : DEFAULT_MEMBERS;
+    return data ? JSON.parse(data) : [];
   },
   saveMembers: (members: TeamMember[]) => {
     localStorage.setItem(KEYS.MEMBERS, JSON.stringify(members));
@@ -112,5 +111,19 @@ export const storageService = {
           console.error("Import failed:", e);
           return false;
       }
+  },
+
+  // CLEAR ALL DATA
+  clearAllData: () => {
+    localStorage.removeItem(KEYS.TASKS);
+    localStorage.removeItem(KEYS.GOALS);
+    localStorage.removeItem(KEYS.MEMBERS);
+    localStorage.removeItem(KEYS.CHAT);
+    localStorage.removeItem(KEYS.STRATEGY);
+    localStorage.removeItem(KEYS.WORKFLOW);
+    // Keep settings to avoid resetting API Keys if we had them, or just reset all
+    // But here we might want to keep some config. For now, we clear the main data.
+    // To do a full hard reset:
+    // localStorage.clear(); 
   }
 };

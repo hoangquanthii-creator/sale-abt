@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { TeamMember } from '../types';
 import { DEPARTMENTS, MEMBER_COLORS } from '../constants';
-import { Users, Plus, Search, Trash2, Edit2, Phone, Briefcase, Building2, Save, X } from 'lucide-react';
+import { Users, Plus, Search, Trash2, Edit2, Phone, Briefcase, Building2, Save, X, Mail } from 'lucide-react';
 
 interface TeamManagerProps {
   members: TeamMember[];
@@ -20,6 +20,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ members, onUpdateMembers }) =
   const [formData, setFormData] = useState<Partial<TeamMember>>({
       name: '',
       phone: '',
+      email: '',
       role: '',
       department: DEPARTMENTS[0],
       color: MEMBER_COLORS[0]
@@ -29,6 +30,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ members, onUpdateMembers }) =
       setFormData({
         name: '',
         phone: '',
+        email: '',
         role: '',
         department: DEPARTMENTS[0],
         color: MEMBER_COLORS[Math.floor(Math.random() * MEMBER_COLORS.length)]
@@ -59,6 +61,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ members, onUpdateMembers }) =
               initials,
               name: formData.name,
               phone: formData.phone,
+              email: formData.email,
               role: formData.role || 'Member',
               department: formData.department || 'Khác',
               color: formData.color || MEMBER_COLORS[0]
@@ -77,7 +80,8 @@ const TeamManager: React.FC<TeamManagerProps> = ({ members, onUpdateMembers }) =
   // Filter Logic
   const filteredMembers = members.filter(m => {
       const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            m.role?.toLowerCase().includes(searchTerm.toLowerCase());
+                            m.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            m.email?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDept = selectedDept === 'All' || m.department === selectedDept;
       return matchesSearch && matchesDept;
   });
@@ -157,7 +161,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ members, onUpdateMembers }) =
               {/* Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 overflow-y-auto pb-20">
                   {filteredMembers.map(member => (
-                      <div key={member.id} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow group relative">
+                      <div key={member.id} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow group relative flex flex-col h-full">
                           <div className="flex items-start justify-between mb-3">
                               <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold ${member.color}`}>
                                   {member.initials}
@@ -179,9 +183,15 @@ const TeamManager: React.FC<TeamManagerProps> = ({ members, onUpdateMembers }) =
                               <span className="text-blue-600">{member.department}</span>
                           </div>
 
-                          <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 p-2 rounded-lg">
-                              <Phone size={14} />
-                              <span>{member.phone || 'Chưa cập nhật SĐT'}</span>
+                          <div className="mt-auto space-y-2">
+                             <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 p-2 rounded-lg">
+                                <Phone size={14} className="text-slate-400"/>
+                                <span className={!member.phone ? 'text-slate-300 italic' : ''}>{member.phone || 'Chưa có SĐT'}</span>
+                             </div>
+                             <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 p-2 rounded-lg">
+                                <Mail size={14} className="text-slate-400" />
+                                <span className={`truncate ${!member.email ? 'text-slate-300 italic' : ''}`} title={member.email}>{member.email || 'Chưa có Email'}</span>
+                             </div>
                           </div>
                       </div>
                   ))}
@@ -207,13 +217,14 @@ const TeamManager: React.FC<TeamManagerProps> = ({ members, onUpdateMembers }) =
                   
                   <div className="space-y-4">
                       <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1">Họ và Tên</label>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Họ và Tên <span className="text-red-500">*</span></label>
                           <input 
                               type="text" 
                               value={formData.name}
                               onChange={(e) => setFormData({...formData, name: e.target.value})}
                               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 outline-none"
                               placeholder="Nguyễn Văn A"
+                              autoFocus
                           />
                       </div>
                       
@@ -240,15 +251,27 @@ const TeamManager: React.FC<TeamManagerProps> = ({ members, onUpdateMembers }) =
                           </div>
                       </div>
 
-                      <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1">Số điện thoại (Zalo)</label>
-                          <input 
-                              type="text" 
-                              value={formData.phone}
-                              onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 outline-none"
-                              placeholder="090xxxxxxx"
-                          />
+                      <div className="grid grid-cols-2 gap-4">
+                          <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">Số điện thoại</label>
+                              <input 
+                                  type="text" 
+                                  value={formData.phone}
+                                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 outline-none"
+                                  placeholder="090xxxxxxx"
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                              <input 
+                                  type="email" 
+                                  value={formData.email}
+                                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 outline-none"
+                                  placeholder="email@company.com"
+                              />
+                          </div>
                       </div>
                   </div>
 

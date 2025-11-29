@@ -25,6 +25,7 @@ export interface TeamMember {
   initials: string;
   color: string;
   phone?: string; // For Zalo integration
+  email?: string; // Contact Email
   role?: string; // e.g., 'Admin', 'Member'
   department?: string; // e.g. 'Sales', 'Tech'
 }

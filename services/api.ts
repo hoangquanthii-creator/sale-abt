@@ -104,8 +104,14 @@ export const api = {
       if (!ai) return "";
 
       const prompt = `
-        Viết một đoạn mô tả ngắn gọn (2-3 câu), chuyên nghiệp cho công việc: "${taskTitle}".
-        Ngôn ngữ: Tiếng Việt. Chỉ trả về nội dung mô tả.
+        Với tư cách là trợ lý quản lý dự án chuyên nghiệp, hãy viết một bản mô tả chi tiết cho công việc: "${taskTitle}".
+        
+        Yêu cầu:
+        1. Viết bằng tiếng Việt, giọng văn chuyên nghiệp, gãy gọn.
+        2. Cấu trúc rõ ràng: Bối cảnh/Mục tiêu -> Các ý chính cần thực hiện -> Kết quả mong đợi.
+        3. Độ dài khoảng 4-6 câu hoặc gạch đầu dòng, đủ chi tiết để người thực hiện hiểu rõ mà không cần hỏi lại.
+        
+        Chỉ trả về nội dung text mô tả.
       `;
 
       try {

@@ -37,25 +37,25 @@ export const api = {
   },
 
   saveTasks: async (tasks: Task[]) => {
-    await delay(200);
+    // REMOVED DELAY: Save immediately to prevent data loss on refresh
     storageService.saveTasks(tasks);
     return { success: true };
   },
 
   saveGoals: async (goals: ProjectGoal[]) => {
-    await delay(200);
+    // REMOVED DELAY
     storageService.saveGoals(goals);
     return { success: true };
   },
 
   saveMembers: async (members: TeamMember[]) => {
-    await delay(200);
+    // REMOVED DELAY
     storageService.saveMembers(members);
     return { success: true };
   },
 
   saveSettings: async (settings: ZaloSettings) => {
-    await delay(200);
+    // REMOVED DELAY
     storageService.saveSettings(settings);
     return { success: true };
   },

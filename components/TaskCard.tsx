@@ -2,7 +2,7 @@
 import React from 'react';
 import { Task, TeamMember } from '../types';
 import { PRIORITY_COLORS, PRIORITY_LABELS, TAG_COLORS } from '../constants';
-import { CheckSquare, AlignLeft, Calendar, MessageCircle, BellRing, Handshake, Award, StickyNote } from 'lucide-react';
+import { CheckSquare, AlignLeft, Calendar, MessageCircle, BellRing, Handshake, Award, StickyNote, Clock, AlertOctagon, Target, AlertTriangle } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
@@ -30,6 +30,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, members, onEdit, onDelete, on
     const index = Math.abs(hash) % TAG_COLORS.length;
     return TAG_COLORS[index];
   };
+
+  // Status Calculation
+  const now = Date.now();
+  const isDone = task.status === 'DONE';
+  const isOverdue = !isDone && task.dueDate && task.dueDate < now;
+  // Due soon: within next 24 hours (86400000 ms)
+  const isDueSoon = !isDone && !isOverdue && task.dueDate && (task.dueDate - now < 86400000) && (task.dueDate > now);
 
   const handleShareZalo = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -64,7 +71,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, members, onEdit, onDelete, on
       draggable
       onDragStart={(e) => onDragStart(e, task.id)}
       onClick={() => onEdit(task)}
-      className="group bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all cursor-grab active:cursor-grabbing mb-3 relative overflow-hidden"
+      className={`group bg-white rounded-xl shadow-sm border hover:shadow-md transition-all cursor-grab active:cursor-grabbing mb-3 relative overflow-hidden ${isOverdue ? 'border-red-200 ring-1 ring-red-100' : 'border-slate-100'}`}
     >
       {/* Cover Image (AI Generated) */}
       {task.imageUrl && (
@@ -76,21 +83,40 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, members, onEdit, onDelete, on
 
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
-            <div className="flex items-center gap-1">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${PRIORITY_COLORS[task.priority]}`}>
-                {PRIORITY_LABELS[task.priority]}
+            <div className="flex flex-wrap items-center gap-1.5">
+                {/* Priority Label */}
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${PRIORITY_COLORS[task.priority]} flex items-center gap-1`}>
+                    {task.priority === 'URGENT' && <AlertTriangle size={10} />}
+                    {PRIORITY_LABELS[task.priority]}
                 </span>
+
+                {/* Overdue Indicator */}
+                {isOverdue && (
+                   <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full flex items-center gap-0.5 font-bold animate-pulse shadow-sm">
+                       <AlertOctagon size={10} /> Quá hạn
+                   </span>
+                )}
+
+                {/* Due Soon Indicator */}
+                {isDueSoon && (
+                   <span className="text-[10px] bg-amber-400 text-white px-1.5 py-0.5 rounded-full flex items-center gap-0.5 font-bold shadow-sm">
+                       <Clock size={10} /> Gấp
+                   </span>
+                )}
+                
+                {/* Notification Status (System state) */}
                 {task.notificationStatus === 'OVERDUE' && (
-                    <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full flex items-center gap-0.5" title="Đã gửi cảnh báo quá hạn">
-                        <BellRing size={10} /> Đã báo
+                    <span className="text-[10px] bg-red-50 text-red-400 border border-red-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5" title="Hệ thống đã gửi cảnh báo">
+                        <BellRing size={8} /> Đã báo
                     </span>
                 )}
                 {task.notificationStatus === 'UPCOMING' && (
-                    <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full flex items-center gap-0.5" title="Đã nhắc việc">
-                        <BellRing size={10} /> Đã nhắc
+                    <span className="text-[10px] bg-blue-50 text-blue-400 border border-blue-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5" title="Hệ thống đã nhắc nhở">
+                        <BellRing size={8} /> Đã nhắc
                     </span>
                 )}
             </div>
+
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                     onClick={handleShareZalo}
@@ -112,7 +138,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, members, onEdit, onDelete, on
             </div>
         </div>
 
-        <h3 className="font-semibold text-slate-800 mb-2 leading-tight">{task.title}</h3>
+        <h3 className={`font-semibold mb-2 leading-tight ${isOverdue ? 'text-red-700' : 'text-slate-800'}`}>{task.title}</h3>
         
         {/* Quick Note */}
         {task.quickNote && (
@@ -122,16 +148,25 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, members, onEdit, onDelete, on
             </div>
         )}
 
+        {/* OKR Linked Indicator */}
+        {task.linkedKeyResultId && (
+            <div className="mb-2 inline-flex items-center gap-1.5 px-2 py-0.5 bg-purple-50 border border-purple-100 text-purple-700 rounded text-[10px] font-bold" title="Công việc này đóng góp cho OKR">
+                <Target size={10} />
+                <span>OKR Linked</span>
+                {task.contributionValue ? <span className="bg-white px-1 rounded text-purple-800 border border-purple-100">+{task.contributionValue}</span> : null}
+            </div>
+        )}
+
         {/* Meeting With Info */}
         {task.meetingWith && (
-            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 mb-1.5 bg-slate-50 px-2 py-1 rounded inline-flex">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 mb-1.5 bg-slate-50 px-2 py-1 rounded inline-flex mt-1">
                 <Handshake size={12} className="text-blue-500"/>
                 <span>Gặp: {task.meetingWith}</span>
             </div>
         )}
 
         {task.description && !task.quickNote && (
-            <p className="text-xs text-slate-500 line-clamp-2 mb-2">{task.description}</p>
+            <p className="text-xs text-slate-500 line-clamp-2 mb-2 mt-1">{task.description}</p>
         )}
 
         {/* Outcome Highlight */}
@@ -176,8 +211,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, members, onEdit, onDelete, on
             <div className="flex items-center gap-1 text-xs text-slate-400">
             {(task.startDate || task.dueDate) && (
                 <>
-                <Calendar size={14} />
-                <span className={task.dueDate && task.dueDate < Date.now() && task.status !== 'DONE' ? 'text-red-500 font-medium' : ''}>
+                <Calendar size={14} className={isOverdue ? 'text-red-500' : isDueSoon ? 'text-amber-500' : ''} />
+                <span className={isOverdue ? 'text-red-600 font-bold' : isDueSoon ? 'text-amber-600 font-medium' : ''}>
                     {task.startDate ? formatDate(task.startDate) : ''} 
                     {task.startDate && task.dueDate ? ' - ' : ''} 
                     {task.dueDate ? formatDate(task.dueDate) : ''}

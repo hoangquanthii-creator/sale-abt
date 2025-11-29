@@ -53,6 +53,7 @@ export const storageService = {
   },
   saveMembers: (members: TeamMember[]) => {
     localStorage.setItem(KEYS.MEMBERS, JSON.stringify(members));
+    console.log("DB: Members saved successfully", members.length);
   },
 
   // Chat History
